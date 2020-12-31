@@ -19,55 +19,26 @@ module.exports = {
             response.responseFailure(res, 'Такой пользователь уже есть');
         } else {
             const { name, email, password } = req.body;
-            const candidate = { name, email, password: crypto.getHash(email + password)};
-            const user = await userController.createUser(candidate);
-            delete user.password;
-
-            const accessToken = tokenController.createAccessToken(user.id);
-            const refreshToken = tokenController.createRefreshToken();
+            const candidate = { name, email, password: crypto.getHash(email + password) };
+            const newUser = await userController.createUser(candidate);
+            const { password: p, ...user } = newUser;
             response.responseSuccess(res, {
                 user,
-                accessToken,
-                refreshToken,
+                accessToken: tokenController.createAccessToken(user.id),
+                refreshToken: tokenController.createRefreshToken(),
             }, 200);
         }
     },
 
-    // login: async (req, res) => {
-    //     const email = req.body.email;
-    //     const password = req.body.password;
-    //     if (await userController.verifyUser(email, password)) {
-    //         const user = await userController.getUserByEmail(email);
-    //         delete user.password;
-    //         const accessToken = tokenController.createAccessToken(user.id);
-    //         const refreshToken = tokenController.createRefreshToken();
-    //         const payload = tokenController.getPayloadFromToken(refreshToken);
-    //         tokenController.saveToken(payload.id, user.id);
-    //         response.responseSuccess(res, {
-    //             user,
-    //             accessToken,
-    //             refreshToken,
-    //         }, 200);
-    //     } else {
-    //         response.responseFailure(res, 'Пользователь не найден');
-    //     }
-    // },
-
     login: async (req, res) => {
-        const email = req.body.email;
-        const password = req.body.password;
+        const { email, password } = req.body;
         const condidate = await userController.getUserByEmail(email);
         if (condidate && crypto.verifyHash(email + password, condidate.password)) {
-            const user = await userController.getUserByEmail(email);
-            delete user.password;
-            const accessToken = tokenController.createAccessToken(user.id);
-            const refreshToken = tokenController.createRefreshToken();
-            const payload = tokenController.getPayloadFromToken(refreshToken);
-            tokenController.saveToken(payload.id, user.id);
+            const { password : p, ...user } = condidate;
             response.responseSuccess(res, {
                 user,
-                accessToken,
-                refreshToken,
+                accessToken: tokenController.createAccessToken(user.id),
+                refreshToken: tokenController.createRefreshToken(),
             }, 200);
         } else {
             response.responseFailure(res, 'Пользователь не найден');
@@ -88,25 +59,16 @@ module.exports = {
     refresh: (req, res) => {
         try {
             const token = req.headers['refresh'];
-            const userId = req.headers['user-id'];
+            const userId = req.headers['x-user-id'];
             const payload = tokenController.getPayloadFromToken(token);
             if (payload.type !== 'refresh') {
                 response.responseFailure(res, 'invalid token')
                 return;
             }
-            const accessToken = tokenController.createAccessToken(userId);
-            const refreshToken = tokenController.createRefreshToken();
-            const payloadORefrefreshToken = tokenController.getPayloadFromToken(refreshToken);
-            tokenController.replaceToken(payload.id, payloadORefrefreshToken.id, userId)
-                .then(() => {
-                    response.responseSuccess(res, {
-                        accessToken,
-                        refreshToken,
-                    }, 200)
-                })
-                .catch(err => {
-                    response.responseError(err)
-                })
+            response.responseSuccess(res, {
+                accessToken: tokenController.createAccessToken(userId),
+                refreshToken: tokenController.createRefreshToken(),
+            }, 200)
         } catch (err) {
             response.responseError(err)
         }

@@ -37,7 +37,7 @@ class PostController {
 
     async getProfilePostList(req, res) {
         if (req.query.id) {
-            const posts = await postService.getProfilePostList(req.query.id);
+            const posts = await postService.getProfilePostList(req.query.id, req.query.isActive);
             if (posts) {
                 return response.responseSuccess(res, posts);
             }
@@ -48,7 +48,7 @@ class PostController {
     };
 
     async updatePost(req, res) {
-        const result = await postService.updatePost(req.body);
+        const result = await postService.updatePost(req.body.post);
         if (result) {
             return response.responseSuccess(res);
         }
@@ -65,6 +65,26 @@ class PostController {
         } else {
             response.responseFailure(res);
         };
+    };
+
+
+    //admin
+    async getNotAgreedPosts(req, res) {
+        const { pageSize, pageNumber } = req.query;
+        try {
+            const data = await postService.getNotAgreedPosts(pageSize, pageNumber);
+            response.responseSuccess(res, data);
+        } catch (e) {
+            response.responseError(res, e);
+        }
+    };
+
+    async approvePost(req, res) {
+        const result = await postService.approvePost(req.body.id);
+        if (result) {
+            return response.responseSuccess(res);
+        }
+        response.responseError(res);
     };
 };
 

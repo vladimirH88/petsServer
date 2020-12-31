@@ -2,6 +2,10 @@ const Sequelize = require('sequelize');
 const sequelizeInstanse = require('../../config/sequilize.config');
 
 module.exports = User = sequelizeInstanse.sequelize.define('users', {
+    role: {
+        type: Sequelize.STRING,
+        allowNull: false,
+    },
     email: {
         type: Sequelize.STRING,
         allowNull: false,

@@ -22,7 +22,7 @@ class UserService {
 	};
 
 	async getUserByEmail(email) {
-		return User.findOne({ where: { email } })
+		return User.findOne({ where: { email }, raw: true })
 			.then(user => user)
 			.catch(err => {
 				console.log(err);

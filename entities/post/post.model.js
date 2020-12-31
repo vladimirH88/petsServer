@@ -2,6 +2,9 @@ const Sequelize = require('sequelize');
 const sequelizeInstanse = require('../../config/sequilize.config');
 
 module.exports = Post = sequelizeInstanse.sequelize.define('post', {
+    isAgreed: {
+        type: Sequelize.BOOLEAN,
+    },
     createrId: {
         type: Sequelize.NUMBER,
         allowNull: false,
@@ -43,7 +46,6 @@ module.exports = Post = sequelizeInstanse.sequelize.define('post', {
     },
     numberOfViews: {
         type: Sequelize.NUMBER,
-        allowNull: false,
     },
     image: {
         type: Sequelize.BLOB,

@@ -1,21 +1,18 @@
 const Post = require('./post.model');
-const fs = require("fs");
-const { post } = require('../../routes/private');
 
 class PostService {
     async getAllPosts(param, direction, pageSize, pageNumber, filter) {
         const offset = pageNumber * pageSize - pageSize;
-        const totalItems = await Post.count()
-        return Post.findAll({
+        return Post.findAndCountAll({
             raw: true,
             order: [[param, direction]],
             limit: +pageSize,
             offset,
-            where: filter
+            where: { ...filter, isAgreed: true }
         })
             .then(posts => ({
-                data: posts,
-                totalItems,
+                data: posts.rows,
+                totalItems : posts.count,
                 pageNumber,
                 pageSize,
             }))
@@ -40,18 +37,12 @@ class PostService {
     async createPost(newPost) {
         const { image, ...post } = newPost;
         return Post.create(post)
-            .then(res => {
-                const data = { "postId": res.id, "images": image }
-                fs.appendFile("postImages.json", JSON.stringify(data) + ',\n', function (error) {
-                    if (error) throw error;
-                });
-                return res;
-            })
+            .then(res => res)
             .catch(err => console.log(err));
     };
 
-    async getProfilePostList(userId) {
-        return Post.findAll({ where: { createrId: userId }, row: true })
+    async getProfilePostList(userId, isActive) {
+        return Post.findAll({ where: { createrId: userId, isAgreed: isActive === 'true' ? true : false }, row: true })
             .then(posts => posts)
             .catch(err => {
                 console.log(err);
@@ -60,8 +51,12 @@ class PostService {
     };
 
     async updatePost(post) {
+        console.log(post.post);
         return Post.update(post, { where: { id: post.id } })
-            .then(res => res)
+            .then(res => {
+                console.log(res);
+            return res
+            })
             .catch(err => {
                 console.log(err);
                 return null;
@@ -71,6 +66,35 @@ class PostService {
     async deletePost(postId) {
         return Post.destroy({ where: { id: postId } })
             .catch(err => console.log(err));
+    };
+
+
+    //admin
+    async getNotAgreedPosts(pageSize, pageNumber) {
+        const offset = pageNumber * pageSize - pageSize;
+        const totalItems = await Post.count()
+        return Post.findAll({
+            raw: true,
+            limit: +pageSize,
+            offset,
+            where: { isAgreed: false }
+        })
+            .then(posts => ({
+                data: posts,
+                totalItems,
+                pageNumber,
+                pageSize,
+            }))
+            .catch(err => new Error(err));
+    };
+
+    async approvePost(id) {
+        return Post.update({ isAgreed: true }, { where: { id } })
+            .then(res => res)
+            .catch(err => {
+                console.log(err);
+                return null;
+            });
     };
 };
 
